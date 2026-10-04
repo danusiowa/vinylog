@@ -11,6 +11,20 @@
 
 ---
 
+## Wygląd
+
+<p align="center">
+  <img src="docs/screens/08-komputer-kolekcja.png" width="860" alt="Moja kolekcja na komputerze: siatka okładek, wyszukiwarka i sortowanie">
+</p>
+
+| Logowanie | Moja kolekcja | Po wypłacie | Karta płyty |
+| :---: | :---: | :---: | :---: |
+| <img src="docs/screens/01-logowanie.png" width="200" alt="Ekran logowania z logo, które zamyka oczy przy wpisywaniu hasła"> | <img src="docs/screens/02-moja-kolekcja.png" width="200" alt="Moja kolekcja na telefonie"> | <img src="docs/screens/03-po-wyplacie.png" width="200" alt="Lista życzeń Po wypłacie z przyciskami Mam!"> | <img src="docs/screens/04-karta-plyty.png" width="200" alt="Karta płyty z okładką, winylem i szczegółami wydania"> |
+| **Nowy nabytek** | **Szukaj płyty** | **To ta płyta?** | |
+| <img src="docs/screens/05-nowy-nabytek.png" width="200" alt="Formularz Nowy nabytek: skan kodu, wyszukiwanie albo ręcznie"> | <img src="docs/screens/06-szukaj-plyty.png" width="200" alt="Wyniki wyszukiwania po tytule i wykonawcy"> | <img src="docs/screens/07-to-ta-plyta.png" width="200" alt="Ekran To ta płyta? ze znalezionym wydaniem"> | |
+
+<sub>Zrzuty z przykładowymi danymi. Część zespołów i okładek jest zmyślona na potrzeby makiet. Płyty bez okładki dostają kolorową okładkę z tytułem, jak „Kind of Blue” wyżej.</sub>
+
 ## Co umie
 
 - **Moja kolekcja** i **Po wypłacie** – płyty, które masz, i te, na które zbierasz. „Mam!” przenosi płytę z listy życzeń do kolekcji.
