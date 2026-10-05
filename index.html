@@ -40,6 +40,8 @@ body[data-view="wanted"]{--bg:#FCEEF0}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
+/* Bez „bujania” strony: nic nie wystaje w bok, brak gumowego odbicia na brzegach (ważne w apce z ekranu głównego) */
+html,body{overflow-x:clip;overscroll-behavior:none}
 :focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 img{max-width:100%}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -109,7 +111,7 @@ img{max-width:100%}
 .top-actions{margin-left:auto;display:flex;align-items:center;gap:12px}
 .top-actions .btn{min-height:52px;padding:0 26px;font-size:17px}
 .invite-result{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--r-field);background:var(--teal-soft)}
-.invite-result .input{font-size:14px;background:var(--surface)}
+.invite-result .input{font-size:16px;background:var(--surface)}
 .invite-actions{display:flex;gap:10px;flex-wrap:wrap}
 .invite-actions > *{flex:1 1 140px}
 .logout{background:none;border:0;min-height:52px;padding:0 10px;display:flex;align-items:center;gap:8px;color:var(--muted);font-weight:500;font-size:17px}
@@ -130,7 +132,7 @@ img{max-width:100%}
 .tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .sort{position:relative}
 .sort-ic{display:none}
-.sort select{appearance:none;-webkit-appearance:none;min-height:50px;padding:0 40px 0 16px;border:1.5px solid var(--line);border-radius:var(--r-field);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%232D2A33' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 16px center;font:inherit;font-size:15px;font-weight:600;color:var(--ink)}
+.sort select{appearance:none;-webkit-appearance:none;min-height:50px;padding:0 40px 0 16px;border:1.5px solid var(--line);border-radius:var(--r-field);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%232D2A33' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 16px center;font:inherit;font-size:16px;font-weight:600;color:var(--ink)}
 .sort select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 4px var(--teal-soft)}
 /* Błąd przy konkretnym polu */
 .input.invalid{border-color:var(--danger);box-shadow:0 0 0 4px var(--danger-soft)}
@@ -397,7 +399,7 @@ dialog::backdrop{background:rgba(46,47,51,.45)}
   .tools .sort:focus-within{border-color:var(--teal);box-shadow:0 0 0 4px var(--teal-soft)}
   .sort-ic{display:block;width:22px;height:22px;color:var(--ink);pointer-events:none}
   .sort select{position:absolute;inset:0;width:100%;height:100%;opacity:0;padding:0}
-  .search .input{padding-left:40px;font-size:15px}
+  .search .input{padding-left:40px;font-size:16px}   /* min. 16px: inaczej iPhone powiększa stronę przy wpisywaniu */
   .search .icon{left:12px}
   dialog{width:100%;max-width:none;max-height:92svh;margin:auto 0 0;border-radius:22px 22px 0 0}
   dialog.confirm{width:calc(100vw - 32px);margin:auto;border-radius:20px}
@@ -1383,7 +1385,7 @@ function setView(v, doRender = true) {
   $("viewTitle").replaceChildren(COPY.views[v].title);
   if (v === "wanted") $("viewTitle").append(svgUse("i-heart"));
   // Komputer: pełny tekst; telefon: krótszy; najwęższe ekrany (<390 px): najkrótszy, żeby się nie ucinał.
-  $("search").placeholder = isDesktop() ? COPY.views[v].search : innerWidth < 390 ? COPY.views[v].searchTiny : COPY.views[v].searchShort;
+  $("search").placeholder = isDesktop() ? COPY.views[v].search : innerWidth < 400 ? COPY.views[v].searchTiny : COPY.views[v].searchShort;
   if (doRender) render();
 }
 document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => { $("search").value = ""; syncSearchClear(); setView(b.dataset.view); window.scrollTo({ top: 0 }); }));
