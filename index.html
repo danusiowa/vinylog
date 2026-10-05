@@ -1262,7 +1262,7 @@ async function loadAlbums() {
   loadFailed = !!error;
   albums = error ? [] : (data || []);
   render();
-  if (!error) backfillCovers();
+  if (!error) backfillCovers().then(sweepOrphanCovers);
 }
 
 /* ---------- Własne kopie okładek (Supabase Storage, koszyk „covers”) ----------
@@ -1318,7 +1318,32 @@ async function shrinkCover(url) {
 }
 function removeOwnCover(url) {
   if (!isOwnCover(url)) return;
-  db.storage.from("covers").remove([decodeURIComponent(url.slice(COVER_PREFIX.length))]).catch(() => {});
+  db.storage.from("covers").remove([decodeURIComponent(url.slice(COVER_PREFIX.length))])
+    .then(({ error }) => { if (error) console.warn("removeOwnCover", error); }).catch(() => {});
+}
+// Sprzątanie po wejściu do aplikacji: kasuje pliki z folderu osoby, do których nie prowadzi
+// żadna jej płyta (np. po przerwanym zapisie albo nieudanym usunięciu). Tylko pliki starsze
+// niż godzina, żeby nie skasować okładki, która właśnie zapisuje się na innym urządzeniu.
+let swept = false;   // raz na wejście do aplikacji
+async function sweepOrphanCovers() {
+  if (swept || loadFailed || albums.length >= 1000) return;   // przy niepełnej liście nie ryzykujemy
+  swept = true;
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    const uid = session?.user?.id; if (!uid) return;
+    const used = new Set(albums.map(a => a.image_url).filter(isOwnCover).map(u => decodeURIComponent(u.slice(COVER_PREFIX.length))));
+    const cutoff = Date.now() - 60 * 60 * 1000, orphans = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await db.storage.from("covers").list(uid, { limit: 1000, offset });
+      if (error || !data) return;
+      for (const f of data) {
+        const path = `${uid}/${f.name}`;
+        if (f.id && !used.has(path) && Date.parse(f.created_at) < cutoff) orphans.push(path);
+      }
+      if (data.length < 1000) break;
+    }
+    if (orphans.length) await db.storage.from("covers").remove(orphans);
+  } catch (err) { console.warn("sweepOrphanCovers", err); }
 }
 // Jednorazowo w tle: przenosimy do magazynu okładki płyt dodanych wcześniej.
 let backfillRunning = false;
@@ -1329,8 +1354,9 @@ async function backfillCovers() {
   for (const a of albums.filter(x => x.image_url && !isOwnCover(x.image_url))) {
     const url = await ownCover(a.image_url);
     if (url === a.image_url) { if (coverServiceDown) break; continue; }   // usługa niedostępna → spróbujemy przy następnym wejściu
-    const { error } = await db.from("albums").update({ image_url: url }).eq("id", a.id);
-    if (error) { removeOwnCover(url); continue; }
+    // Zapis tylko, jeśli w międzyczasie nikt nie zmienił okładki (np. edycja na drugim urządzeniu).
+    const { data: upd, error } = await db.from("albums").update({ image_url: url }).eq("id", a.id).eq("image_url", a.image_url).select("id");
+    if (error || !upd?.length) { removeOwnCover(url); continue; }
     a.image_url = url; changed = true;
   }
   backfillRunning = false;
