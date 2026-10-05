@@ -73,6 +73,16 @@ img{max-width:100%}
 .more summary .hint{font-weight:400}
 .more-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 16px}
 .more-grid .wide{grid-column:1/-1}
+.tracks{margin-top:12px}
+.tracks .tr-body{padding:0 16px 14px}
+.tr-list{list-style:none;margin:0;padding:0}
+.tr-list li{display:grid;grid-template-columns:2.6em 1fr auto;gap:10px;align-items:baseline;padding:7px 0;border-top:1px solid var(--line);font-size:14px}
+.tr-list li:first-child{border-top:0}
+.tr-list li.side{border-top:1.5px solid var(--ink)}
+.tr-list .pos{color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.tr-list .ta{display:block;color:var(--muted);font-size:13px}
+.tr-list .dur{color:var(--muted);font-variant-numeric:tabular-nums}
+.tr-note{margin:10px 0 0;color:var(--muted);font-size:13px}
 @media (max-width:360px){.more-grid{grid-template-columns:1fr}}
 .form-error{font-size:14px;color:var(--danger);min-height:20px}
 .icon{width:22px;height:22px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -804,6 +814,12 @@ const COPY = {
     noResultWanted: ["Nie ma tego na liście.", "Ale zawsze może się pojawić. Zwykle się pojawia.", "Wyczyść wyszukiwanie"],
     get loadError() { return ["Nie udało się pobrać kolekcji.", sessionPick("empty.loadError", ["Internet wziął przerwę. Odśwież stronę.",
       "Serwer zrobił przerwę na kawę. Odśwież stronę.", "Cisza między utworami trwa za długo. Odśwież stronę."])]; }
+  },
+  tracks: {
+    title: "Tracklista",
+    loading: "Wczytujemy utwory…",
+    none: "Bazy milczą. Okładka pewnie wie więcej.",
+    approx: "Lista z najbliższego wydania. Może się różnić od Twojego."
   },
   form: {
     addTitle: "Dodaj płytę",
@@ -2194,7 +2210,7 @@ function openDetails(a) {
   const actions = el("div", { class: "sheet-actions" },
     el("button", { class: "btn", type: "button", text: D.edit, onclick: () => { $("detailDialog").close(); openForm(a); } }),
     owned ? null : el("button", { class: "btn-ghost", type: "button", text: COPY.have, onclick: () => { $("detailDialog").close(); moveToOwned(a); } }));
-  body.replaceChildren(head, record, facts, since, actions);
+  body.replaceChildren(head, record, facts, tracksNode(a), since, actions);
   tintSheet(a);
   if (!$("detailDialog").open) { $("detailDialog").showModal(); modalOpened(); }
 }
@@ -2233,6 +2249,76 @@ function releaseFacts(r) {
   ].filter(([, v]) => v);
   if (!rows.length) return [];
   return [el("div", { class: "facts-grid" }, ...rows.map(([k, v]) => el("div", {}, el("small", { text: k }), el("span", { text: v }))))];
+}
+// ----- Tracklista na karcie płyty -----
+// Źródło: wydanie zapisane przy płycie (Discogs przez naszą funkcję, MusicBrainz bezpośrednio).
+// Płyty bez wydania (dodane ręcznie): szukamy po wykonawcy i tytule, z dopiskiem, że to wydanie najbliższe.
+// Lista nie trafia do bazy; trzymamy ją w pamięci do końca wizyty.
+const trackCache = new Map();
+const msToTime = (ms) => { if (!ms) return ""; const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+async function tracksFromSource(url) {
+  const dg = /discogs\.com\/(?:[^/]+\/)?release\/(\d+)/.exec(url || "");
+  if (dg) {
+    const { data, error } = await db.functions.invoke("discogs-barcode", { body: { release: Number(dg[1]) } });
+    if (error || !Array.isArray(data?.tracklist)) throw error || new Error("no tracklist");
+    return data.tracklist.map(t => ({ pos: t.position, title: t.title, dur: t.duration, artist: t.artists }));
+  }
+  const mb = /musicbrainz\.org\/release\/([0-9a-f-]{36})/.exec(url || "");
+  if (mb) {
+    const r = await fetch(`https://musicbrainz.org/ws/2/release/${mb[1]}?inc=recordings+artist-credits&fmt=json`, { headers: { Accept: "application/json" } });
+    if (!r.ok) throw new Error("mb " + r.status);
+    const rel = await r.json(), many = (rel.media || []).length > 1;
+    return (rel.media || []).flatMap(m => (m.tracks || []).map(t => ({
+      pos: /^\d+$/.test(t.number || "") && many ? `${m.position}.${t.number}` : (t.number || ""),
+      title: t.title, dur: msToTime(t.length),
+      artist: (t["artist-credit"] || []).map(c => c.name + (c.joinphrase || "")).join("").trim()
+    })));
+  }
+  return null;
+}
+async function loadTracks(a) {
+  if (trackCache.has(a.id)) return trackCache.get(a.id);
+  let res = { tracks: [], approx: false };
+  try {
+    if (a.source_url) res.tracks = (await tracksFromSource(a.source_url)) || [];
+  } catch (err) { console.warn("tracks", err); }
+  if (!res.tracks.length) {
+    try {   // najbliższe wydanie po wykonawcy i tytule
+      const want = norm(a.title), who = norm(a.artist);
+      const hits = await searchText(`${a.artist} ${a.title}`);
+      for (const h of hits.filter(h => norm(h.title) === want && (!who || norm(h.artist).includes(who) || who.includes(norm(h.artist)))).slice(0, 3)) {
+        if (h.source_url === a.source_url) continue;
+        const t = await tracksFromSource(h.source_url).catch(() => null);
+        if (t?.length) { res = { tracks: t, approx: true }; break; }
+      }
+    } catch (err) { console.warn("tracks search", err); }
+  }
+  if (res.tracks.length) trackCache.set(a.id, res);
+  return res;
+}
+function tracksNode(a) {
+  const T = COPY.tracks;
+  const box = el("div", { class: "tr-body" });
+  const det = el("details", { class: "more tracks" }, el("summary", { text: T.title }), box);
+  let started = false;
+  det.addEventListener("toggle", async () => {
+    if (!det.open || started) return;
+    started = true;
+    box.replaceChildren(el("p", { class: "tr-note", text: T.loading }));
+    const { tracks, approx } = await loadTracks(a);
+    if (!det.isConnected) return;
+    if (!tracks.length) { started = false; box.replaceChildren(el("p", { class: "tr-note", text: T.none })); return; }
+    const albumArtist = norm(a.artist);
+    let lastSide = null;
+    const list = el("ol", { class: "tr-list" }, ...tracks.map(t => {
+      const side = /^[A-Z]/i.test(t.pos || "") ? t.pos[0].toUpperCase() : (t.pos || "").split(".")[0];
+      const cls = lastSide !== null && side !== lastSide ? "side" : null; lastSide = side;
+      const other = t.artist && norm(t.artist) !== albumArtist ? el("span", { class: "ta", text: t.artist }) : null;
+      return el("li", cls ? { class: cls } : {}, el("span", { class: "pos", text: t.pos || "" }), el("span", {}, t.title, other), el("span", { class: "dur", text: t.dur || "" }));
+    }));
+    box.replaceChildren(...[list, approx ? el("p", { class: "tr-note", text: T.approx }) : null].filter(Boolean));
+  });
+  return det;
 }
 function sourceLabel(url) {
   const name = /discogs\.com/.test(url || "") ? "Discogs" : "MusicBrainz";

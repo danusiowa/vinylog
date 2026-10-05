@@ -5,6 +5,8 @@
 //
 // Druga funkcja tej samej usługi: wyszukiwanie po tekście (tytuł, wykonawca).
 // Wejście { q: "fleetwood rumours" } → { results: [ …do 15 wydań winylowych… ] }
+// Trzecia: lista utworów konkretnego wydania.
+// Wejście { release: 1234567 } → { tracklist: [ { position, title, duration, artists } ] }
 //
 // Odpowiedź (kod): { found: true, artist, title, year, country, label, catno, formats,
 //              format_quantity, image_url, source_url, master_url } albo { found: false }
@@ -59,6 +61,27 @@ Deno.serve(async (req) => {
   let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { /* puste */ }
   const headers = { Authorization: `Discogs token=${token}`, "User-Agent": "VinyLog/1.0 +https://danusiowa.github.io/vinylog/" };
+
+  // ----- lista utworów wydania -----
+  if (body.release !== undefined) {
+    const id = String(body.release).replace(/\D/g, "");
+    if (!id) return json(req, { error: "bad release" }, 400);
+    const r = await fetch(`https://api.discogs.com/releases/${id}`, { headers });
+    if (r.status === 404) return json(req, { tracklist: [] });
+    if (!r.ok) return json(req, { error: `discogs ${r.status}` }, 502);
+    const rel = await r.json();
+    const clean = (n: string) => String(n ?? "").replace(/\s*\(\d+\)$/, "").replace(/\*$/, "").trim();
+    return json(req, {
+      tracklist: (rel.tracklist ?? [])
+        .filter((t: Record<string, any>) => (t.type_ ?? "track") === "track")
+        .map((t: Record<string, any>) => ({
+          position: t.position ?? "",
+          title: t.title ?? "",
+          duration: t.duration ?? "",
+          artists: (t.artists ?? []).map((a: Record<string, any>) => clean(a.anv || a.name)).filter(Boolean).join(", "),
+        })),
+    });
+  }
 
   // ----- wyszukiwanie po tekście -----
   if (typeof body.q === "string") {

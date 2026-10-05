@@ -35,7 +35,7 @@
 - **Dane wydania same się uzupełniają:** rok, kraj, wytwórnia, numer katalogowy, format i okładka. Najpierw z [Discogs](https://www.discogs.com/), a gdy tam nic nie ma, z [MusicBrainz](https://musicbrainz.org/) i [Cover Art Archive](https://coverartarchive.org/). Dane z obu źródeł są ujednolicone.
 - **Własne kopie okładek** w Supabase Storage, zmniejszone do 800 px. Nie znikną, gdy źródło usunie obrazek.
 - **Egzemplarze i duplikaty:** ta sama płyta drugi raz to „+1 egzemplarz” zamiast nowego wpisu.
-- **Karta płyty** ze szczegółami wydania, wyszukiwarka, sortowanie.
+- **Karta płyty** ze szczegółami wydania i tracklistą (strony A/B, czasy), wyszukiwarka, sortowanie.
 - **Zaproszenia linkiem:** każda zalogowana osoba może zaprosić kolejną. Link wysyła się czymkolwiek, na przykład WhatsAppem albo SMS-em.
 - **Instalacja na telefonie** (PWA): ikona na ekranie, pełny ekran bez paska przeglądarki. Android: menu ⋮ → „Zainstaluj aplikację”, iPhone (Safari): Udostępnij → „Do ekranu początkowego”. Nowe wersje wczytują się same.
 - **Każdy widzi tylko swoje płyty** – pilnują tego polityki RLS w bazie.
@@ -55,7 +55,7 @@ Edge Functions:
 
 | Funkcja | Do czego |
 | --- | --- |
-| `discogs-barcode` | Szuka w Discogs po kodzie kreskowym albo po tekście. Token Discogs zostaje na serwerze |
+| `discogs-barcode` | Szuka w Discogs po kodzie kreskowym albo po tekście i pobiera tracklistę wydania. Token Discogs zostaje na serwerze |
 | `cover-copy` | Kopiuje okładkę spod linku do magazynu `covers` |
 | `invite-link` | Tworzy link z zaproszeniem do aplikacji |
 
