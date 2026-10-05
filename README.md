@@ -37,6 +37,7 @@
 - **Egzemplarze i duplikaty:** ta sama płyta drugi raz to „+1 egzemplarz” zamiast nowego wpisu.
 - **Karta płyty** ze szczegółami wydania, wyszukiwarka, sortowanie.
 - **Zaproszenia linkiem:** każda zalogowana osoba może zaprosić kolejną. Link wysyła się czymkolwiek, na przykład WhatsAppem albo SMS-em.
+- **Instalacja na telefonie** (PWA): ikona na ekranie, pełny ekran bez paska przeglądarki. Android: menu ⋮ → „Zainstaluj aplikację”, iPhone (Safari): Udostępnij → „Do ekranu początkowego”. Nowe wersje wczytują się same.
 - **Każdy widzi tylko swoje płyty** – pilnują tego polityki RLS w bazie.
 
 ## Jak to jest zbudowane
