@@ -388,7 +388,7 @@ dialog::backdrop{background:rgba(46,47,51,.45)}
   .bottomnav button[aria-current="page"]{color:var(--ink);font-weight:700}
   .bottomnav button[data-view="owned"][aria-current="page"] .icon{background:#F4E1B5;color:var(--ochre-ink)}
   .bottomnav button[data-view="wanted"][aria-current="page"] .icon{background:#F6D3DA;color:var(--pink-ink)}
-  /* „Nowy nabytek” to akcja, nie zakładka: grafitowa pigułka jak główny przycisk. */
+  /* „Dodaj płytę” to akcja, nie zakładka: grafitowa pigułka jak główny przycisk. */
   .bottomnav #addBtnNav{color:var(--ink);font-weight:700}
   .bottomnav #addBtnNav .icon{background:var(--ink);color:#fff}
   .toasts{left:16px;right:16px;width:auto;top:calc(12px + env(safe-area-inset-top))}
@@ -526,7 +526,7 @@ dialog::backdrop{background:rgba(46,47,51,.45)}
         <button class="tab" data-view="wanted">Po wypłacie</button>
       </nav>
       <div class="top-actions">
-        <button class="btn" id="addBtnTop"><svg class="icon"><use href="#i-plus"/></svg>Nowy nabytek</button>
+        <button class="btn" id="addBtnTop"><svg class="icon"><use href="#i-plus"/></svg>Dodaj płytę</button>
         <button class="logout" id="installBtn" type="button" aria-label="Zainstaluj" hidden><svg class="icon"><use href="#i-install"/></svg><span>Zainstaluj</span></button>
         <button class="logout" id="inviteBtn" type="button" aria-label="Zaproś do VinyLog"><svg class="icon"><use href="#i-invite"/></svg><span>Zaproś</span></button>
         <button class="logout" id="logoutBtn" aria-label="Wyloguj"><svg class="icon"><use href="#i-out"/></svg><span>Wyloguj</span></button>
@@ -564,7 +564,7 @@ dialog::backdrop{background:rgba(46,47,51,.45)}
   <nav class="bottomnav" aria-label="Nawigacja">
     <button data-view="owned" aria-current="page"><svg class="icon"><use href="#i-disc"/></svg>Moja kolekcja</button>
     <button data-view="wanted"><svg class="icon"><use href="#i-heart"/></svg>Po wypłacie</button>
-    <button id="addBtnNav"><svg class="icon"><use href="#i-plus"/></svg>Nowy nabytek</button>
+    <button id="addBtnNav"><svg class="icon"><use href="#i-plus"/></svg>Dodaj płytę</button>
   </nav>
 </div>
 
@@ -806,8 +806,9 @@ const COPY = {
       "Serwer zrobił przerwę na kawę. Odśwież stronę.", "Cisza między utworami trwa za długo. Odśwież stronę."])]; }
   },
   form: {
-    addTitle: "Nowy nabytek",
-    addSub: "Kolejna płyta? Jakże niespodziewanie.",
+    addTitle: "Dodaj płytę",
+    addSub: "Kolejna płyta? Jakże niespodziewanie.",          // gdy dodajesz do kolekcji
+    addSubWanted: "Marzyć nie kosztuje. Na razie.",           // gdy dodajesz do „Po wypłacie”
     editTitle: "Edytuj płytę",
     editSub: "Wersja poprawiona. Jak wydanie z bonusami.",
     scanTitle: "Zeskanuj kod kreskowy",
@@ -1542,6 +1543,7 @@ $("copiesMinus").addEventListener("click", () => setFormCopies(formCopies - 1));
 $("copiesPlus").addEventListener("click", () => setFormCopies(formCopies + 1));
 function setFormStatus(s) {
   formStatus = s;
+  if (!editing) $("formSub").textContent = s === "wanted" ? COPY.form.addSubWanted : COPY.form.addSub;
   $("copiesField").hidden = s !== "owned";   // egzemplarze liczymy tylko w kolekcji
   document.querySelectorAll("[data-status]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.status === s)));
   resetDup();
@@ -1577,7 +1579,6 @@ function openForm(a = null, prefill = {}) {
   editing = a;
   $("albumForm").reset(); $("formError").textContent = "";
   $("formTitle").textContent = a ? COPY.form.editTitle : COPY.form.addTitle;
-  $("formSub").textContent = a ? COPY.form.editSub : COPY.form.addSub;
   $("scanTileTitle").textContent = COPY.form.scanTitle; $("scanTileSub").textContent = COPY.form.scanSub;
   $("findTileTitle").textContent = COPY.find.tileTitle; $("findTileSub").textContent = COPY.find.tileSub;
   $("addTiles").hidden = !!a;
@@ -1596,6 +1597,7 @@ function openForm(a = null, prefill = {}) {
     $("countryList").append(...[...new Set(Object.values(COUNTRY_FROM_NAME))].map(countryName).sort((a, b) => a.localeCompare(b, "pl")).map(n => el("option", { value: n })));
   $("moreBlock").open = !!(src.year || src.country || src.label || src.catalog_number || src.format);
   setFormStatus(src.status || (a ? "owned" : view));
+  if (a) $("formSub").textContent = COPY.form.editSub;
   updatePreview();
   if (!$("albumDialog").open) { $("albumDialog").showModal(); modalOpened(); }
   $("statusLbl").textContent = a ? COPY.form.statusEdit : COPY.form.statusAdd;
