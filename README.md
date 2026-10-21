@@ -38,7 +38,8 @@
 - **Karta płyty** ze szczegółami wydania i tracklistą (strony A/B, czasy), wyszukiwarka, sortowanie.
 - **Zaproszenia linkiem:** każda zalogowana osoba może zaprosić kolejną. Link wysyła się czymkolwiek, na przykład WhatsAppem albo SMS-em.
 - **Instalacja na telefonie** (PWA): ikona na ekranie, pełny ekran bez paska przeglądarki. Android: menu ⋮ → „Zainstaluj aplikację”, iPhone (Safari): Udostępnij → „Do ekranu początkowego”. Nowe wersje wczytują się same.
-- **Każdy widzi tylko swoje płyty** – pilnują tego polityki RLS w bazie.
+- **Udostępnianie półek:** pokazujesz swoją kolekcję, listę „Po wypłacie” albo obie wybranej osobie z VinyLog. Ona ogląda je w aplikacji (przycisk „Udostępnij” → jej e-mail), bez możliwości zmian.
+- **Każdy widzi tylko swoje płyty** i półki udostępnione mu przez innych – pilnują tego polityki RLS w bazie.
 
 ## Jak to jest zbudowane
 
@@ -64,7 +65,7 @@ Wszystkie teksty interfejsu są w obiekcie `COPY` w `index.html`, a ustawienia w
 ## Własna instalacja
 
 1. **Supabase:** załóż projekt.
-2. **Baza:** w SQL Editor uruchom po kolei pliki z [`supabase/migrations`](supabase/migrations), od `00` do `04`. W `01` wpisz swój e-mail.
+2. **Baza:** w SQL Editor uruchom po kolei pliki z [`supabase/migrations`](supabase/migrations), od `00` do `05`. W `01` wpisz swój e-mail.
 3. **Logowanie:** w Authentication:
    - ustaw Site URL i Redirect URLs na adres aplikacji,
    - wyłącz „Allow new users to sign up” (konta powstają tylko z zaproszenia),
