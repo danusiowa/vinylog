@@ -137,6 +137,8 @@ img{max-width:100%}
 .seg.multi button[data-share="owned"][aria-pressed="true"]{background:var(--ochre);color:var(--vinyl);box-shadow:none}
 .seg.multi button[data-share="wanted"][aria-pressed="true"]{background:var(--pink);color:var(--vinyl);box-shadow:none}
 body.on-shelf #addBtnTop,body.on-shelf #addBtnNav{display:none!important}
+body[data-view="friends"] .tools{display:none}
+.friends-list{grid-column:1/-1;display:flex;flex-direction:column;gap:10px;max-width:560px}
 .invite-result{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--r-field);background:var(--teal-soft)}
 .invite-result .input{font-size:16px;background:var(--surface)}
 .invite-actions{display:flex;gap:10px;flex-wrap:wrap}
@@ -415,6 +417,7 @@ dialog::backdrop{background:rgba(46,47,51,.45)}
   .bottomnav button[aria-current="page"]{color:var(--ink);font-weight:700}
   .bottomnav button[data-view="owned"][aria-current="page"] .icon{background:#F4E1B5;color:var(--ochre-ink)}
   .bottomnav button[data-view="wanted"][aria-current="page"] .icon{background:#F6D3DA;color:var(--pink-ink)}
+  .bottomnav button[data-view="friends"][aria-current="page"] .icon{background:var(--teal-soft);color:var(--teal-ink)}
   /* „Dodaj płytę” to akcja, nie zakładka: grafitowa pigułka jak główny przycisk. */
   .bottomnav #addBtnNav{color:var(--ink);font-weight:700}
   .bottomnav #addBtnNav .icon{background:var(--ink);color:#fff}
@@ -475,6 +478,7 @@ dialog::backdrop{background:rgba(46,47,51,.45)}
   <symbol id="i-invite" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 19.5c.8-3.4 3.3-5.5 6.5-5.5 1.6 0 3 .5 4.1 1.4M18 13v6M15 16h6"/></symbol>
   <symbol id="i-install" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></symbol>
   <symbol id="i-shelf" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 13v6h14v-6"/></symbol>
+  <symbol id="i-friends" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.7-3.2 3-5 6-5s5.3 1.8 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 13.6c2.3.2 4 1.7 4.5 4.4"/></symbol>
   <symbol id="i-out" viewBox="0 0 24 24"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></symbol>
   <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 9v6M11 9v6M13 9v6M16 9v6"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
@@ -552,6 +556,7 @@ dialog::backdrop{background:rgba(46,47,51,.45)}
       <nav class="tabs" aria-label="Widoki">
         <button class="tab" data-view="owned" aria-current="page">Moja kolekcja</button>
         <button class="tab" data-view="wanted">Po wypłacie</button>
+        <button class="tab" data-view="friends" hidden>Znajomi</button>
       </nav>
       <div class="top-actions">
         <button class="btn" id="addBtnTop"><svg class="icon"><use href="#i-plus"/></svg>Dodaj płytę</button>
@@ -597,6 +602,7 @@ dialog::backdrop{background:rgba(46,47,51,.45)}
   <nav class="bottomnav" aria-label="Nawigacja">
     <button data-view="owned" aria-current="page"><svg class="icon"><use href="#i-disc"/></svg>Moja kolekcja</button>
     <button data-view="wanted"><svg class="icon"><use href="#i-heart"/></svg>Po wypłacie</button>
+    <button data-view="friends" hidden><svg class="icon"><use href="#i-friends"/></svg>Znajomi</button>
     <button id="addBtnNav"><svg class="icon"><use href="#i-plus"/></svg>Dodaj płytę</button>
   </nav>
 </div>
@@ -838,6 +844,7 @@ const COPY = {
   },
   views: {
     owned:  { title: "Moja kolekcja", search: "Czego szukasz? Pewnie to masz", searchShort: "Czego szukasz? Pewnie to masz", searchTiny: "Pewnie to masz" },
+    friends: { title: "Znajomi", search: "", searchShort: "", searchTiny: "" },
     wanted: { title: "Po wypłacie",  search: "Szukaj w „Po wypłacie”", searchShort: "Szukaj na liście", searchTiny: "Szukaj na liście" }
   },
   // [liczba, komentarz]
@@ -894,7 +901,8 @@ const COPY = {
     othersBoth: "Kolekcja i Po wypłacie", othersOwned: "Kolekcja",
     emptyOwned: ["Pusto.", "Ta półka dopiero czeka na pierwszą płytę."],
     emptyWanted: ["Pusto.", "Nic tu nie ma. Podejrzanie rozsądnie."],
-    gone: "Ta półka nie jest już udostępniona."
+    gone: "Ta półka nie jest już udostępniona.",
+    friendsSub: "Cudze półki. Oglądać można, zazdrościć też."
   },
   tracks: {
     title: "Tracklista",
@@ -1481,6 +1489,7 @@ async function backfillCovers() {
 }
 
 function setView(v, doRender = true) {
+  if (v === "friends" && shelf) leaveShelf(false);
   view = v;
   if (!$("app").hidden) document.body.dataset.view = v;
   document.querySelectorAll("[data-view]").forEach(b => {
@@ -1556,6 +1565,7 @@ function emptyNode([title, text, cta], badgeCls, icon, onCta) {
 }
 const shownAlbums = () => shelf ? shelfAlbums : albums;   // własne albo oglądanej półki
 function renderCount() {
+  if (view === "friends") { $("viewSub").replaceChildren(COPY.shelf.friendsSub); return; }
   const list = shownAlbums().filter(a => (a.status || "owned") === view);
   if (loadFailed || !list.length) { $("viewSub").replaceChildren(); return; }
   const [count, joke] = view === "owned" ? COPY.ownedSub(list.reduce((s, a) => s + (a.copies || 1), 0)) : COPY.wantedSub(list.length);
@@ -1563,6 +1573,7 @@ function renderCount() {
 }
 function render() {
   const grid = $("grid");
+  if (view === "friends") { renderCount(); grid.replaceChildren(friendsNode()); return; }
   const list = shownAlbums().filter(a => (a.status || "owned") === view);
   const q = norm($("search").value);
   // Szukamy też po wytwórni, roku, numerze katalogowym, formacie i kraju.
@@ -1704,7 +1715,7 @@ function openForm(a = null, prefill = {}) {
   if (!$("countryList").childElementCount)
     $("countryList").append(...[...new Set(Object.values(COUNTRY_FROM_NAME))].map(countryName).sort((a, b) => a.localeCompare(b, "pl")).map(n => el("option", { value: n })));
   $("moreBlock").open = !!(src.year || src.country || src.label || src.catalog_number || src.format);
-  setFormStatus(src.status || (a ? "owned" : view));
+  setFormStatus(src.status || (a ? "owned" : view === "wanted" ? "wanted" : "owned"));
   if (a) $("formSub").textContent = COPY.form.editSub;
   updatePreview();
   if (!$("albumDialog").open) { $("albumDialog").showModal(); modalOpened(); }
@@ -2223,7 +2234,9 @@ const listsText = (o, w) => o && w ? COPY.shelf.listsBoth : o ? COPY.shelf.lists
 async function loadSharedWithMe() {
   const { data, error } = await db.rpc("shared_with_me");
   sharedWithMe = error ? [] : (data || []);
-  if (shelf && !sharedWithMe.some(x => x.owner_id === shelf.owner_id)) { leaveShelf(); toast("deleted", COPY.shelf.gone); }
+  syncShelfChrome();
+  if (view === "friends") { if (!sharedWithMe.length) setView("owned"); else render(); }
+  if (shelf && !sharedWithMe.some(x => x.owner_id === shelf.owner_id)) { leaveShelf(); toast("deleted", [COPY.shelf.gone, ""]); }
 }
 async function loadMyShares() {
   const { data, error } = await db.rpc("my_shares");
@@ -2235,13 +2248,13 @@ function syncShelfChrome() {
   if (shelf) { $("shelfBarLead").textContent = COPY.shelf.barLead; $("shelfBarWho").textContent = shelf.email; $("shelfBack").textContent = COPY.shelf.back; }
   // Na cudzej półce tylko udostępnione listy.
   document.querySelectorAll("button[data-view]").forEach(b => {
-    b.hidden = !!shelf && !shelf[b.dataset.view];
+    b.hidden = b.dataset.view === "friends" ? !sharedWithMe.length : !!shelf && !shelf[b.dataset.view];
     if (b.dataset.view === "owned") { const t = [...b.childNodes].reverse().find(n => n.nodeType === 3 && n.textContent.trim()); if (t) t.textContent = shelf ? COPY.shelf.titleOwned : COPY.views.owned.title; }
   });
 }
 async function openShelf(s) {
   const { data, error } = await withLoader(null, () => db.from("albums").select(ALBUM_COLS).eq("user_id", s.owner_id).order("created_at", { ascending: false }));
-  if (error) { toast("error", COPY.shelf.failed); return; }
+  if (error) { toast("error", [COPY.shelf.failed, ""]); return; }
   shelf = s; shelfAlbums = data || [];
   if ($("shelfDialog").open) $("shelfDialog").close();
   $("search").value = ""; syncSearchClear();
@@ -2258,9 +2271,14 @@ function leaveShelf(doRender = true) {
 $("shelfBack").addEventListener("click", () => { leaveShelf(); window.scrollTo({ top: 0 }); });
 function setShareSel(k, v) { shareSel[k] = v; document.querySelector(`[data-share="${k}"]`).setAttribute("aria-pressed", String(v)); $("shareError").textContent = ""; }
 document.querySelectorAll("[data-share]").forEach(b => b.addEventListener("click", () => setShareSel(b.dataset.share, !shareSel[b.dataset.share])));
+function friendsNode() {
+  const S = COPY.shelf;
+  return el("div", { class: "friends-list" }, ...sharedWithMe.map(x => el("button", { type: "button", class: "shelf-item", onclick: () => openShelf(x) },
+    el("span", { class: "who" }, el("b", { text: x.email }), el("small", { text: x.owned && x.wanted ? S.othersBoth : x.owned ? S.othersOwned : S.listsWanted })))));
+}
 function renderShelfDialog() {
   const S = COPY.shelf;
-  $("shelfOthers").hidden = !sharedWithMe.length;
+  $("shelfOthers").hidden = true;   // cudze półki są w menu „Znajomi”
   $("shelfOthersList").replaceChildren(...(sharedWithMe.length ? [
     el("button", { type: "button", class: "shelf-item", "aria-current": String(!shelf), onclick: () => { leaveShelf(); $("shelfDialog").close(); } },
       el("span", { class: "who" }, el("b", { text: S.mine }))),
@@ -2284,8 +2302,8 @@ async function openShelfDialog() {
 }
 async function stopSharing(x) {
   const { data, error } = await withLoader(null, () => db.rpc("share_shelf", { p_email: x.email, p_owned: false, p_wanted: false }));
-  if (error || data !== "removed") { toast("error", COPY.shelf.failed); return; }
-  await loadMyShares(); renderShelfDialog(); toast("deleted", COPY.shelf.stopped);
+  if (error || data !== "removed") { toast("error", [COPY.shelf.failed, ""]); return; }
+  await loadMyShares(); renderShelfDialog(); toast("deleted", [COPY.shelf.stopped, ""]);
 }
 $("shareEmail").addEventListener("input", () => { $("shareError").textContent = ""; });
 $("shareForm").addEventListener("submit", async (e) => {
@@ -2298,7 +2316,7 @@ $("shareForm").addEventListener("submit", async (e) => {
   if (data === "not_found") { $("shareError").textContent = S.notFound; return; }
   if (data === "self") { $("shareError").textContent = S.self; return; }
   $("shareForm").reset(); setShareSel("owned", true); setShareSel("wanted", false);
-  await loadMyShares(); renderShelfDialog(); toast("success", S.shared);
+  await loadMyShares(); renderShelfDialog(); toast("success", [S.shared, ""]);
 });
 $("shelfBtn").addEventListener("click", openShelfDialog);
 $("shelfDialog").addEventListener("close", modalClosed);
