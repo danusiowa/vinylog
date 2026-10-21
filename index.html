@@ -120,6 +120,23 @@ img{max-width:100%}
 .tab[data-view="wanted"][aria-current="page"]{border-color:var(--pink)}
 .top-actions{margin-left:auto;display:flex;align-items:center;gap:12px}
 .top-actions .btn{min-height:52px;padding:0 26px;font-size:17px}
+.shelf-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;background:var(--teal-soft);color:var(--teal-ink);font-size:14px;border-bottom:1px solid var(--line)}
+.shelf-bar > span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shelf-bar b{color:var(--ink)}
+.shelf-bar .btn-mini{white-space:nowrap;flex:none}
+.sec-lbl{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.share-form,#shelfOthers,#shareMine{display:flex;flex-direction:column;gap:10px}
+#shelfOthers,#shareMine{margin-top:6px}
+.shelf-list{display:flex;flex-direction:column;gap:8px}
+.shelf-item{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:var(--r-field);background:var(--surface);text-align:left;color:var(--ink)}
+.shelf-item[aria-current="true"]{border-color:var(--teal);background:var(--teal-soft)}
+.shelf-item .who{flex:1;min-width:0;display:flex;flex-direction:column}
+.shelf-item .who b{font-weight:700;overflow-wrap:anywhere}
+.shelf-item .who small{color:var(--muted);font-size:13px}
+.shelf-item .link{padding:4px 0;white-space:nowrap}
+.seg.multi button[data-share="owned"][aria-pressed="true"]{background:var(--ochre);color:var(--vinyl);box-shadow:none}
+.seg.multi button[data-share="wanted"][aria-pressed="true"]{background:var(--pink);color:var(--vinyl);box-shadow:none}
+body.on-shelf #addBtnTop,body.on-shelf #addBtnNav{display:none!important}
 .invite-result{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--r-field);background:var(--teal-soft)}
 .invite-result .input{font-size:16px;background:var(--surface)}
 .invite-actions{display:flex;gap:10px;flex-wrap:wrap}
@@ -457,6 +474,7 @@ dialog::backdrop{background:rgba(46,47,51,.45)}
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
   <symbol id="i-invite" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 19.5c.8-3.4 3.3-5.5 6.5-5.5 1.6 0 3 .5 4.1 1.4M18 13v6M15 16h6"/></symbol>
   <symbol id="i-install" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></symbol>
+  <symbol id="i-shelf" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 13v6h14v-6"/></symbol>
   <symbol id="i-out" viewBox="0 0 24 24"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></symbol>
   <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 9v6M11 9v6M13 9v6M16 9v6"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
@@ -538,11 +556,16 @@ dialog::backdrop{background:rgba(46,47,51,.45)}
       <div class="top-actions">
         <button class="btn" id="addBtnTop"><svg class="icon"><use href="#i-plus"/></svg>Dodaj płytę</button>
         <button class="logout" id="installBtn" type="button" aria-label="Zainstaluj" hidden><svg class="icon"><use href="#i-install"/></svg><span>Zainstaluj</span></button>
+        <button class="logout" id="shelfBtn" type="button"><svg class="icon"><use href="#i-shelf"/></svg><span id="shelfBtnTxt"></span></button>
         <button class="logout" id="inviteBtn" type="button" aria-label="Zaproś do VinyLog"><svg class="icon"><use href="#i-invite"/></svg><span>Zaproś</span></button>
         <button class="logout" id="logoutBtn" aria-label="Wyloguj"><svg class="icon"><use href="#i-out"/></svg><span>Wyloguj</span></button>
       </div>
     </div>
   </header>
+  <div class="shelf-bar" id="shelfBar" hidden>
+    <span><span id="shelfBarLead"></span> <b id="shelfBarWho"></b></span>
+    <button type="button" class="btn-mini" id="shelfBack"></button>
+  </div>
 
   <main class="main">
     <div class="head">
@@ -689,6 +712,34 @@ dialog::backdrop{background:rgba(46,47,51,.45)}
     <div class="sheet-actions" id="inviteMake"><button class="btn" type="submit" id="inviteSubmit"></button></div>
   </form>
 </dialog>
+<dialog id="shelfDialog" aria-labelledby="shelfTitle">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div><h2 class="display" id="shelfTitle"></h2><p class="sub" id="shelfSub"></p></div>
+      <button type="button" class="close" data-close aria-label="Zamknij"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <section id="shelfOthers" hidden>
+      <span class="sec-lbl" id="shelfOthersLbl"></span>
+      <div class="shelf-list" id="shelfOthersList"></div>
+    </section>
+    <form id="shareForm" class="share-form" novalidate>
+      <span class="sec-lbl" id="shareLbl"></span>
+      <div class="field"><label for="shareEmail" id="shareEmailLbl"></label>
+        <input class="input" id="shareEmail" type="email" autocomplete="off" inputmode="email" required></div>
+      <div class="seg multi" role="group" aria-labelledby="shareLbl">
+        <button type="button" data-share="owned" aria-pressed="true">Moja kolekcja</button>
+        <button type="button" data-share="wanted" aria-pressed="false">Po wypłacie</button>
+      </div>
+      <div class="form-error" id="shareError" role="alert"></div>
+      <button class="btn" type="submit" id="shareSubmit"></button>
+      <span class="hint" id="shareHint"></span>
+    </form>
+    <section id="shareMine" hidden>
+      <span class="sec-lbl" id="shareMineLbl"></span>
+      <div class="shelf-list" id="shareMineList"></div>
+    </section>
+  </div>
+</dialog>
 <dialog id="detailDialog" aria-labelledby="detailTitle">
   <div class="sheet" id="detailBody"></div>
 </dialog>
@@ -814,6 +865,36 @@ const COPY = {
     noResultWanted: ["Nie ma tego na liście.", "Ale zawsze może się pojawić. Zwykle się pojawia.", "Wyczyść wyszukiwanie"],
     get loadError() { return ["Nie udało się pobrać kolekcji.", sessionPick("empty.loadError", ["Internet wziął przerwę. Odśwież stronę.",
       "Serwer zrobił przerwę na kawę. Odśwież stronę.", "Cisza między utworami trwa za długo. Odśwież stronę."])]; }
+  },
+  shelf: {
+    btn: "Udostępnij",
+    title: "Udostępnij",
+    sub: "Pochwal się. Albo pozazdrość.",
+    othersLbl: "Udostępnione Tobie",
+    mine: "Moja półka",
+    shareLbl: "Udostępnij swoją półkę",
+    emailLbl: "E-mail osoby z VinyLog",
+    emailPh: "np. znajomy@poczta.pl",
+    submit: "Udostępnij",
+    hint: "Ta osoba tylko ogląda. Żeby zmienić listy, udostępnij jeszcze raz z innym wyborem.",
+    mineLbl: "Udostępniasz",
+    stop: "Przestań",
+    listsBoth: "Moja kolekcja i Po wypłacie", listsOwned: "Moja kolekcja", listsWanted: "Po wypłacie",
+    pickList: "Zaznacz co najmniej jedną listę.",
+    badEmail: "To nie wygląda na e-mail.",
+    notFound: "Nie znamy tego adresu. Zaproszenie najpierw, chwalenie potem.",
+    self: "Sobie już udostępniasz. Codziennie.",
+    failed: "Nie udało się. Spróbuj za chwilę.",
+    shared: "Udostępnione.",
+    stopped: "Już nie udostępniasz.",
+    barLead: "Oglądasz półkę:",
+    back: "Wróć do swojej",
+    titleOwned: "Kolekcja",
+    search: "Szukaj na tej półce",
+    othersBoth: "Kolekcja i Po wypłacie", othersOwned: "Kolekcja",
+    emptyOwned: ["Pusto.", "Ta półka dopiero czeka na pierwszą płytę."],
+    emptyWanted: ["Pusto.", "Nic tu nie ma. Podejrzanie rozsądnie."],
+    gone: "Ta półka nie jest już udostępniona."
   },
   tracks: {
     title: "Tracklista",
@@ -1266,7 +1347,7 @@ db.auth.onAuthStateChange((event, session) => {
     enterApp();
   }
   if (event === "SIGNED_OUT") {
-    entered = false; albums = []; $("search").value = ""; syncSearchClear(); showScreen(false); authMode("login");
+    entered = false; albums = []; leaveShelf(false); sharedWithMe = []; me = null; $("search").value = ""; syncSearchClear(); showScreen(false); authMode("login");
     toast("deleted", COPY.auth.loggedOut);
   }
 });
@@ -1275,24 +1356,30 @@ db.auth.onAuthStateChange((event, session) => {
    DANE
    ===================================================================== */
 let albums = [];
+let shelf = null, shelfAlbums = [], sharedWithMe = [], myShares = [];   // oglądana cudza półka (null = moja)
 let view = "owned";
 let loadFailed = false;
 let entered = false;
 
+let me = null;   // id zalogowanej osoby
 async function enterApp() {
   if (entered) return;
   entered = true;
+  try { me = (await db.auth.getSession()).data.session?.user?.id || null; } catch { me = null; }
   pendingPasswordSetup = false;
   showScreen(true); setView(view, false);
   await loadAlbums();
 }
+const ALBUM_COLS = "id, artist, title, image_url, source_url, barcode, status, created_at, year, country, label, catalog_number, format, master_url, copies";
 async function loadAlbums() {
+  if (!me) { loadFailed = true; albums = []; render(); return; }
   const { data, error } = await withLoader(null, () =>
-    db.from("albums").select("id, artist, title, image_url, source_url, barcode, status, created_at, year, country, label, catalog_number, format, master_url, copies").order("created_at", { ascending: false }));
+    db.from("albums").select(ALBUM_COLS).eq("user_id", me).order("created_at", { ascending: false }));
   loadFailed = !!error;
   albums = error ? [] : (data || []);
   render();
   if (!error) backfillCovers().then(sweepOrphanCovers);
+  loadSharedWithMe();
 }
 
 /* ---------- Własne kopie okładek (Supabase Storage, koszyk „covers”) ----------
@@ -1399,10 +1486,10 @@ function setView(v, doRender = true) {
   document.querySelectorAll("[data-view]").forEach(b => {
     if (b.dataset.view === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
   });
-  $("viewTitle").replaceChildren(COPY.views[v].title);
+  $("viewTitle").replaceChildren(shelf && v === "owned" ? COPY.shelf.titleOwned : COPY.views[v].title);
   if (v === "wanted") $("viewTitle").append(svgUse("i-heart"));
   // Komputer: pełny tekst; telefon: krótszy; najwęższe ekrany (<390 px): najkrótszy, żeby się nie ucinał.
-  $("search").placeholder = isDesktop() ? COPY.views[v].search : innerWidth < 400 ? COPY.views[v].searchTiny : COPY.views[v].searchShort;
+  $("search").placeholder = shelf ? COPY.shelf.search : isDesktop() ? COPY.views[v].search : innerWidth < 400 ? COPY.views[v].searchTiny : COPY.views[v].searchShort;
   if (doRender) render();
 }
 document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => { $("search").value = ""; syncSearchClear(); setView(b.dataset.view); window.scrollTo({ top: 0 }); }));
@@ -1467,15 +1554,16 @@ function emptyNode([title, text, cta], badgeCls, icon, onCta) {
     el("strong", { text: title }), el("span", { text: text }),
     cta ? el("button", { class: "btn", type: "button", text: cta, onclick: onCta }) : null);
 }
+const shownAlbums = () => shelf ? shelfAlbums : albums;   // własne albo oglądanej półki
 function renderCount() {
-  const list = albums.filter(a => (a.status || "owned") === view);
+  const list = shownAlbums().filter(a => (a.status || "owned") === view);
   if (loadFailed || !list.length) { $("viewSub").replaceChildren(); return; }
   const [count, joke] = view === "owned" ? COPY.ownedSub(list.reduce((s, a) => s + (a.copies || 1), 0)) : COPY.wantedSub(list.length);
   $("viewSub").replaceChildren(el("span", { class: "count" + (view === "wanted" ? " wanted" : ""), text: count }), el("span", { text: joke }));
 }
 function render() {
   const grid = $("grid");
-  const list = albums.filter(a => (a.status || "owned") === view);
+  const list = shownAlbums().filter(a => (a.status || "owned") === view);
   const q = norm($("search").value);
   // Szukamy też po wytwórni, roku, numerze katalogowym, formacie i kraju.
   const hay = (a) => norm([a.artist, a.title, a.label, a.year, a.catalog_number, a.format, countryName(a.country)].filter(Boolean).join(" "));
@@ -1483,6 +1571,10 @@ function render() {
   renderCount();
 
   if (loadFailed) { grid.replaceChildren(emptyNode(COPY.empty.loadError, "b-danger", "i-alert")); return; }
+  if (!list.length && shelf) {
+    grid.replaceChildren(emptyNode(view === "owned" ? COPY.shelf.emptyOwned : COPY.shelf.emptyWanted, view === "owned" ? "b-ochre" : "b-pink", view === "owned" ? "i-disc" : "i-heart"));
+    return;
+  }
   if (!list.length) {
     grid.replaceChildren(view === "owned"
       ? emptyNode(COPY.empty.owned, "b-ochre", "i-disc", () => openForm())
@@ -1502,7 +1594,7 @@ function render() {
         el("span", { class: "artist-row" }, el("span", { text: a.artist }),
           view === "owned" && (a.copies || 1) > 1 ? el("span", { class: "xn", text: "×" + a.copies, "aria-hidden": "true" }) : null)));
     const card = el("article", { class: "card" }, hit);
-    if (view === "wanted") card.append(el("button", { class: "have", type: "button", text: COPY.have, "aria-label": `${COPY.have} ${a.title}`, onclick: () => moveToOwned(a) }));
+    if (view === "wanted" && !shelf) card.append(el("button", { class: "have", type: "button", text: COPY.have, "aria-label": `${COPY.have} ${a.title}`, onclick: () => moveToOwned(a) }));
     return card;
   }));
 }
@@ -2125,6 +2217,94 @@ $("findForm").addEventListener("submit", (e) => { e.preventDefault(); runFind();
 $("findDialog").addEventListener("close", modalClosed);
 $("findDialog").addEventListener("click", (e) => { if (e.target === $("findDialog")) $("findDialog").close(); });
 
+/* ---------- Półki: udostępnianie list i oglądanie cudzych (tylko do oglądania) ---------- */
+const shareSel = { owned: true, wanted: false };
+const listsText = (o, w) => o && w ? COPY.shelf.listsBoth : o ? COPY.shelf.listsOwned : COPY.shelf.listsWanted;
+async function loadSharedWithMe() {
+  const { data, error } = await db.rpc("shared_with_me");
+  sharedWithMe = error ? [] : (data || []);
+  if (shelf && !sharedWithMe.some(x => x.owner_id === shelf.owner_id)) { leaveShelf(); toast("deleted", COPY.shelf.gone); }
+}
+async function loadMyShares() {
+  const { data, error } = await db.rpc("my_shares");
+  myShares = error ? [] : (data || []);
+}
+function syncShelfChrome() {
+  document.body.classList.toggle("on-shelf", !!shelf);
+  $("shelfBar").hidden = !shelf;
+  if (shelf) { $("shelfBarLead").textContent = COPY.shelf.barLead; $("shelfBarWho").textContent = shelf.email; $("shelfBack").textContent = COPY.shelf.back; }
+  // Na cudzej półce tylko udostępnione listy.
+  document.querySelectorAll("button[data-view]").forEach(b => {
+    b.hidden = !!shelf && !shelf[b.dataset.view];
+    if (b.dataset.view === "owned") { const t = [...b.childNodes].reverse().find(n => n.nodeType === 3 && n.textContent.trim()); if (t) t.textContent = shelf ? COPY.shelf.titleOwned : COPY.views.owned.title; }
+  });
+}
+async function openShelf(s) {
+  const { data, error } = await withLoader(null, () => db.from("albums").select(ALBUM_COLS).eq("user_id", s.owner_id).order("created_at", { ascending: false }));
+  if (error) { toast("error", COPY.shelf.failed); return; }
+  shelf = s; shelfAlbums = data || [];
+  if ($("shelfDialog").open) $("shelfDialog").close();
+  $("search").value = ""; syncSearchClear();
+  syncShelfChrome();
+  setView(s[view] ? view : (s.owned ? "owned" : "wanted"));
+  window.scrollTo({ top: 0 });
+}
+function leaveShelf(doRender = true) {
+  if (!shelf) return;
+  shelf = null; shelfAlbums = [];
+  syncShelfChrome();
+  if (doRender) { $("search").value = ""; syncSearchClear(); setView(view); }
+}
+$("shelfBack").addEventListener("click", () => { leaveShelf(); window.scrollTo({ top: 0 }); });
+function setShareSel(k, v) { shareSel[k] = v; document.querySelector(`[data-share="${k}"]`).setAttribute("aria-pressed", String(v)); $("shareError").textContent = ""; }
+document.querySelectorAll("[data-share]").forEach(b => b.addEventListener("click", () => setShareSel(b.dataset.share, !shareSel[b.dataset.share])));
+function renderShelfDialog() {
+  const S = COPY.shelf;
+  $("shelfOthers").hidden = !sharedWithMe.length;
+  $("shelfOthersList").replaceChildren(...(sharedWithMe.length ? [
+    el("button", { type: "button", class: "shelf-item", "aria-current": String(!shelf), onclick: () => { leaveShelf(); $("shelfDialog").close(); } },
+      el("span", { class: "who" }, el("b", { text: S.mine }))),
+    ...sharedWithMe.map(x => el("button", { type: "button", class: "shelf-item", "aria-current": String(shelf?.owner_id === x.owner_id), onclick: () => openShelf(x) },
+      el("span", { class: "who" }, el("b", { text: x.email }), el("small", { text: x.owned && x.wanted ? S.othersBoth : x.owned ? S.othersOwned : S.listsWanted }))))
+  ] : []));
+  $("shareMine").hidden = !myShares.length;
+  $("shareMineList").replaceChildren(...myShares.map(x => el("div", { class: "shelf-item" },
+    el("span", { class: "who" }, el("b", { text: x.email }), el("small", { text: listsText(x.owned, x.wanted) })),
+    el("button", { type: "button", class: "link", text: S.stop, onclick: () => stopSharing(x) }))));
+}
+async function openShelfDialog() {
+  const S = COPY.shelf;
+  $("shelfTitle").textContent = S.title; $("shelfSub").textContent = S.sub;
+  $("shelfOthersLbl").textContent = S.othersLbl; $("shareLbl").textContent = S.shareLbl; $("shareEmailLbl").textContent = S.emailLbl;
+  $("shareEmail").placeholder = S.emailPh; $("shareSubmit").textContent = S.submit; $("shareHint").textContent = S.hint; $("shareMineLbl").textContent = S.mineLbl;
+  $("shareForm").reset(); $("shareError").textContent = ""; setShareSel("owned", true); setShareSel("wanted", false);
+  await withLoader(null, () => Promise.all([loadSharedWithMe(), loadMyShares()]));
+  renderShelfDialog();
+  if (!$("shelfDialog").open) { $("shelfDialog").showModal(); modalOpened(); }
+}
+async function stopSharing(x) {
+  const { data, error } = await withLoader(null, () => db.rpc("share_shelf", { p_email: x.email, p_owned: false, p_wanted: false }));
+  if (error || data !== "removed") { toast("error", COPY.shelf.failed); return; }
+  await loadMyShares(); renderShelfDialog(); toast("deleted", COPY.shelf.stopped);
+}
+$("shareEmail").addEventListener("input", () => { $("shareError").textContent = ""; });
+$("shareForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const S = COPY.shelf, email = $("shareEmail").value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $("shareError").textContent = S.badEmail; $("shareEmail").focus(); return; }
+  if (!shareSel.owned && !shareSel.wanted) { $("shareError").textContent = S.pickList; return; }
+  const { data, error } = await withLoader(null, () => db.rpc("share_shelf", { p_email: email, p_owned: shareSel.owned, p_wanted: shareSel.wanted }));
+  if (error) { console.warn(error); $("shareError").textContent = S.failed; return; }
+  if (data === "not_found") { $("shareError").textContent = S.notFound; return; }
+  if (data === "self") { $("shareError").textContent = S.self; return; }
+  $("shareForm").reset(); setShareSel("owned", true); setShareSel("wanted", false);
+  await loadMyShares(); renderShelfDialog(); toast("success", S.shared);
+});
+$("shelfBtn").addEventListener("click", openShelfDialog);
+$("shelfDialog").addEventListener("close", modalClosed);
+$("shelfDialog").addEventListener("click", (e) => { if (e.target === $("shelfDialog")) $("shelfDialog").close(); });
+$("shelfBtnTxt").textContent = COPY.shelf.btn; $("shelfBtn").setAttribute("aria-label", COPY.shelf.btn);
+
 /* ---------- Zaproszenie przez link (dla każdego zalogowanego) ---------- */
 function openInvite() {
   const I = COPY.invite;
@@ -2191,7 +2371,7 @@ function openDetails(a) {
   if (owned) extra.push(el("div", {}, el("small", { text: D.copies }), el("span", { text: String(a.copies || 1) })));
   // Czego brakuje i jak to uzupełnić: po kodzie (wszędzie) albo skanem (tylko telefon).
   const missing = !a.year || !a.label || !a.format || !a.catalog_number || !a.country;
-  const fill = !missing ? null
+  const fill = !missing || shelf ? null
     : a.barcode ? el("button", { class: "btn-mini", type: "button", text: D.fillByCode, onclick: () => { $("detailDialog").close(); enrichByCode(a); } })
     : !isDesktop() ? el("button", { class: "btn-mini", type: "button", text: D.fillByScan, onclick: () => enrichByScan(a) })
     : null;
@@ -2207,10 +2387,10 @@ function openDetails(a) {
         a.source_url ? el("a", { href: a.source_url, target: "_blank", rel: "noopener", text: sourceLabel(a.source_url) }) : null)) : null);
   const when = a.created_at ? new Date(a.created_at).toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" }) : null;
   const since = when ? el("p", { class: "since", text: `${D.added} ${when}. ${pickFresh(owned ? D.sinceOwned : D.sinceWanted)}` }) : null;
-  const actions = el("div", { class: "sheet-actions" },
+  const actions = shelf ? null : el("div", { class: "sheet-actions" },
     el("button", { class: "btn", type: "button", text: D.edit, onclick: () => { $("detailDialog").close(); openForm(a); } }),
     owned ? null : el("button", { class: "btn-ghost", type: "button", text: COPY.have, onclick: () => { $("detailDialog").close(); moveToOwned(a); } }));
-  body.replaceChildren(head, record, facts, tracksNode(a), since, actions);
+  body.replaceChildren(...[head, record, facts, tracksNode(a), since, actions].filter(Boolean));
   tintSheet(a);
   if (!$("detailDialog").open) { $("detailDialog").showModal(); modalOpened(); }
 }
@@ -2395,7 +2575,7 @@ document.addEventListener("keydown", (e) => {
 /* ---------- Przycisk „wstecz” (Android, gest cofania) zamyka okno zamiast wychodzić z aplikacji ----------
    Otwarte okno = jeden wpis w historii. Kilka okien po kolei dzieli ten sam wpis. */
 let ignorePop = false;
-const anyModalOpen = () => $("albumDialog").open || $("detailDialog").open || $("inviteDialog").open || $("findDialog").open || !$("scanner").hidden || !$("found").hidden;
+const anyModalOpen = () => $("shelfDialog").open || $("albumDialog").open || $("detailDialog").open || $("inviteDialog").open || $("findDialog").open || !$("scanner").hidden || !$("found").hidden;
 function modalOpened() {
   if (backPending) return;                     // cofanie w toku — po nim popstate doda wpis z powrotem
   if (history.state && history.state.modal) return;
@@ -2422,6 +2602,7 @@ window.addEventListener("popstate", async () => {
   }
   if ($("detailDialog").open) $("detailDialog").close();
   if ($("inviteDialog").open) $("inviteDialog").close();
+  if ($("shelfDialog").open) $("shelfDialog").close();
   if ($("findDialog").open) $("findDialog").close();
 });
 
