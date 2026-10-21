@@ -38,7 +38,7 @@
 - **Karta płyty** ze szczegółami wydania i tracklistą (strony A/B, czasy), wyszukiwarka, sortowanie.
 - **Zaproszenia linkiem:** każda zalogowana osoba może zaprosić kolejną. Link wysyła się czymkolwiek, na przykład WhatsAppem albo SMS-em.
 - **Instalacja na telefonie** (PWA): ikona na ekranie, pełny ekran bez paska przeglądarki. Android: menu ⋮ → „Zainstaluj aplikację”, iPhone (Safari): Udostępnij → „Do ekranu początkowego”. Nowe wersje wczytują się same.
-- **Udostępnianie półek:** pokazujesz swoją kolekcję, listę „Po wypłacie” albo obie wybranej osobie z VinyLog. Ona ogląda je w aplikacji (przycisk „Udostępnij” → jej e-mail), bez możliwości zmian.
+- **Udostępnianie półek:** pokazujesz swoją kolekcję, listę „Po wypłacie” albo obie wybranej osobie z VinyLog. Udostępniasz przyciskiem „Udostępnij” (jej e-mail + wybór list), a ona ogląda je w menu „Znajomi”, bez możliwości zmian.
 - **Każdy widzi tylko swoje płyty** i półki udostępnione mu przez innych – pilnują tego polityki RLS w bazie.
 
 ## Jak to jest zbudowane
