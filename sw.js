@@ -4,7 +4,7 @@
 // pojawia się od razu; kopia z pamięci jest tylko na wypadek braku internetu.
 // Dane z Supabase, Discogs, MusicBrainz i okładki NIE są tu zapisywane.
 
-const VERSION = "vinylog-v1";
+const VERSION = "vinylog-v2";
 const SHELL = ["./", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon.svg"];
 const CDN = ["https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"];
 
@@ -23,7 +23,9 @@ self.addEventListener("activate", (e) => {
 async function networkFirst(req) {
   const cache = await caches.open(VERSION);
   try {
-    const res = await fetch(req);
+    // cache: "no-cache" omija 10-minutową pamięć przeglądarki z GitHub Pages,
+    // więc nowa wersja apki jest widoczna od razu po wdrożeniu.
+    const res = await fetch(req.url, { cache: "no-cache", credentials: "same-origin" });
     if (res.ok) cache.put(req.mode === "navigate" ? "./" : req, res.clone());
     return res;
   } catch {
