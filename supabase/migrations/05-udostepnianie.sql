@@ -27,6 +27,8 @@ create table if not exists public.shares (
 create index if not exists shares_viewer_idx on public.shares (viewer_id);
 
 alter table public.shares enable row level security;
+-- Uprawnienia do tabeli (projekt nie nadaje ich automatycznie; bez tego zapytania o płyty kończą się błędem).
+grant select, insert, update, delete on table public.shares to authenticated;
 
 drop policy if exists "shares_owner_all" on public.shares;
 drop policy if exists "shares_viewer_select" on public.shares;
