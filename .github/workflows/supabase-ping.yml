@@ -1,11 +1,11 @@
 # Budzik dla Supabase: darmowy projekt usypia się po 7 dniach bez ruchu.
-# Co 3 dni wysyłamy jedno małe zapytanie do bazy (funkcja ping z migracji 06).
+# Codziennie wysyłamy jedno małe zapytanie do bazy (funkcja ping z migracji 07 zapisuje znacznik czasu).
 # Klucz publishable jest i tak publiczny (jest w index.html), więc nie potrzeba sekretów.
 name: Supabase ping
 
 on:
   schedule:
-    - cron: "17 6 */3 * *"   # co 3 dni o 6:17 UTC
+    - cron: "17 6 * * *"     # codziennie o 6:17 UTC
   workflow_dispatch:          # można też uruchomić ręcznie w zakładce Actions
 
 jobs:
@@ -14,9 +14,9 @@ jobs:
     steps:
       - name: Zapytanie do bazy
         run: |
-          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+          code=$(curl -s --retry 3 --retry-delay 20 -o /dev/null -w "%{http_code}" -X POST \
             "https://ooiubupvbxyaggiciqrw.supabase.co/rest/v1/rpc/ping" \
             -H "apikey: sb_publishable_x_zj5GpNR6ryhUHCKgHrqg_leCEiQ3u" \
             -H "Content-Type: application/json" -d '{}')
-          echo "Odpowiedź: $code"
+          echo "Odpowiedź: $code (000 = projekt uśpiony albo niedostępny)"
           test "$code" = "200"
