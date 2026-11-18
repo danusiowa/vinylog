@@ -60,12 +60,14 @@ Edge Functions:
 | `cover-copy` | Kopiuje okładkę spod linku do magazynu `covers` |
 | `invite-link` | Tworzy link z zaproszeniem do aplikacji |
 
+Budzik: [`.github/workflows/supabase-ping.yml`](.github/workflows/supabase-ping.yml) codziennie wywołuje funkcję `ping` (migracja 07), żeby darmowy projekt Supabase nie usypiał się po 7 dniach bez ruchu. Ręcznie: zakładka Actions → Supabase ping → Run workflow.
+
 Wszystkie teksty interfejsu są w obiekcie `COPY` w `index.html`, a ustawienia w obiekcie `CONFIG`.
 
 ## Własna instalacja
 
 1. **Supabase:** załóż projekt.
-2. **Baza:** w SQL Editor uruchom po kolei pliki z [`supabase/migrations`](supabase/migrations), od `00` do `05`. W `01` wpisz swój e-mail.
+2. **Baza:** w SQL Editor uruchom po kolei pliki z [`supabase/migrations`](supabase/migrations), od `00` do `07`. W `01` wpisz swój e-mail.
 3. **Logowanie:** w Authentication:
    - ustaw Site URL i Redirect URLs na adres aplikacji,
    - wyłącz „Allow new users to sign up” (konta powstają tylko z zaproszenia),
